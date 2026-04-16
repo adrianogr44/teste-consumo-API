@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Busca de Filmes - OMDb API</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    #app { max-width: 800px; width: 100%; }
+    .search-area { display: flex; gap: 0.75rem; margin-bottom: 2rem; }
+    .search-area input {
+      flex: 1; padding: 0.75rem 1rem; border-radius: 8px;
+      border: 1px solid #333; background: #1a1a1a; color: #e0e0e0;
+      font-size: 1rem; outline: none; transition: border-color 0.2s;
+    }
+    .search-area input:focus { border-color: #e50914; }
+    .search-area button {
+      padding: 0.75rem 1.5rem; background: #e50914; color: white;
+      border: none; border-radius: 8px; font-size: 1rem; cursor: pointer;
+    }
+    .search-area button:hover { background: #b0070f; }
+    .movie-card {
+      display: flex; gap: 2rem; background: #1a1a1a;
+      border-radius: 16px; padding: 2rem; border: 1px solid #2a2a2a;
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .movie-card img {
+      width: 200px; min-width: 200px; height: 300px;
+      object-fit: cover; border-radius: 10px; border: 2px solid #2a2a2a;
+    }
+    .movie-info { display: flex; flex-direction: column; gap: 0.75rem; }
+    .movie-info h1 { font-size: 1.8rem; color: #ffffff; line-height: 1.2; }
+    .badge {
+      display: inline-block; background: #e50914; color: white;
+      font-size: 0.75rem; padding: 3px 10px; border-radius: 20px;
+      font-weight: 600; width: fit-content;
+    }
+    .meta { font-size: 0.9rem; color: #888; }
+    .rating { font-size: 1.1rem; color: #f5c518; font-weight: 600; }
+    .plot {
+      font-size: 0.95rem; line-height: 1.7; color: #ccc;
+      border-left: 3px solid #e50914; padding-left: 1rem;
+    }
+    .status-message { text-align: center; padding: 2rem; color: #888; }
+    .status-message.error { color: #e57373; }
+    .loader { display: flex; justify-content: center; padding: 2rem; }
+    .spinner {
+      width: 40px; height: 40px; border: 4px solid #333;
+      border-top-color: #e50914; border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 550px) {
+      .movie-card { flex-direction: column; align-items: center; }
+      .movie-card img { width: 100%; min-width: unset; height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="search-area">
+      <input type="text" id="searchInput" placeholder="Digite o nome de um filme..." />
+      <button id="searchBtn">Buscar</button>
+    </div>
+    <div id="resultado"></div>
+  </div>
+
+  <script>
+    // ✅ API Key já configurada!
+    const API_KEY = "6c8352d4";
+
+    async function buscarFilme(titulo) {
+      const resultado = document.getElementById("resultado");
+      resultado.innerHTML = `<div class="loader"><div class="spinner"></div></div>`;
+
+      const url = `https://www.omdbapi.com/?apikey=${API_KEY}&t=${encodeURIComponent(titulo)}&plot=full`;
+
+      try {
+        const resposta = await fetch(url);
+        const dados = await resposta.json();
+
+        if (dados.Response === "False") {
+          resultado.innerHTML = `<p class="status-message error">⚠️ Filme não encontrado: "${dados.Error}"</p>`;
+          return;
+        }
+
+        resultado.innerHTML = `
+          <div class="movie-card">
+            <img
+              src="${dados.Poster !== 'N/A' ? dados.Poster : 'https://via.placeholder.com/200x300/1a1a1a/e50914?text=Sem+Poster'}"
+              alt="Pôster de ${dados.Title}"
+            />
+            <div class="movie-info">
+              <span class="badge">${dados.Type?.toUpperCase() || 'FILME'}</span>
+              <h1>${dados.Title}</h1>
+              <p class="meta">📅 ${dados.Year} &nbsp;|&nbsp; ⏱ ${dados.Runtime} &nbsp;|&nbsp; 🌍 ${dados.Country}</p>
+              <p class="meta">🎭 ${dados.Genre}</p>
+              <p class="meta">🎬 Direção: ${dados.Director}</p>
+              <p class="rating">⭐ IMDb: ${dados.imdbRating} / 10</p>
+              <p class="plot">${dados.Plot}</p>
+            </div>
+          </div>`;
+
+      } catch (erro) {
+        resultado.innerHTML = `
+          <p class="status-message error">
+            ❌ Erro de conexão. Verifique sua internet.<br/>
+            <small>${erro.message}</small>
+          </p>`;
+      }
+    }
+
+    const btn   = document.getElementById("searchBtn");
+    const input = document.getElementById("searchInput");
+
+    btn.addEventListener("click", () => {
+      const titulo = input.value.trim();
+      if (titulo) buscarFilme(titulo);
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") btn.click();
+    });
+
+    buscarFilme("The Matrix");
+  </script>
+</body>
+</html>
